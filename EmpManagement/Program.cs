@@ -1,6 +1,9 @@
+using AutoMapper;
 using EmpManagement.BusinessLogic.Interfaces;
+using EmpManagement.BusinessLogic.Mappers;
 using EmpManagement.BusinessLogic.Services;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,8 +20,9 @@ builder.Services.AddCors(options =>
 });
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-builder.Services.AddScoped<IDepartmentService>(provider => new DepartmentService(connectionString));
+builder.Services.AddScoped<IDepartmentService>(provider => new DepartmentService(connectionString, provider.GetRequiredService<IMapper>()));
 builder.Services.AddScoped<IEmployeeService>(provider => new EmployeeService(connectionString));
+builder.Services.AddAutoMapper(typeof(DepartmentProfile));
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle

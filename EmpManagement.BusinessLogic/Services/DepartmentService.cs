@@ -1,4 +1,5 @@
-﻿using EmpManagement.BusinessLogic.Interfaces;
+﻿using AutoMapper;
+using EmpManagement.BusinessLogic.Interfaces;
 using EmpManagement.Core.Models;
 using EmpManagement.Core.Requests;
 using EmpManagement.Infrastructure.Services;
@@ -15,14 +16,15 @@ namespace EmpManagement.BusinessLogic.Services
     public class DepartmentService : IDepartmentService
     {
         private readonly string _connectionString;
-        
+        private readonly IMapper _mapper;
 
-        public DepartmentService(string connectionString)
+        public DepartmentService(string connectionString, IMapper mapper)
         {
-            _connectionString = connectionString;          
+            _connectionString = connectionString;
+            _mapper = mapper;
         }
 
-        
+
         public async Task<List<DepartmentModel>> GetAllDepartments()
         {
             var departments = new List<DepartmentModel>();
@@ -73,6 +75,11 @@ namespace EmpManagement.BusinessLogic.Services
         {
             using (var connection = new SqlConnection(_connectionString))
             {
+                //Check unique department
+                var departmentModel = _mapper.Map<DepartmentModel>(department);
+                var departmentCount = await CheckUniqueDepartment(departmentModel);
+                if (departmentCount > 0) { throw new Exception("This department exists."); }
+
                 connection.Open();
                 var command = new SqlCommand("INSERT INTO Departments (Code, Name, Location, Description) VALUES (@Code, @Name, @Location, @Description); SELECT SCOPE_IDENTITY();", connection);
                 command.Parameters.AddWithValue("@Code", department.Code);
@@ -83,10 +90,23 @@ namespace EmpManagement.BusinessLogic.Services
             }
         }
 
+        //Check unique department
+        private async Task<int> CheckUniqueDepartment(DepartmentModel request)
+        {
+            var departmentList = await GetAllDepartments();
+
+            var departmentModels = departmentList.Where(d => d.Code == request.Code || d.Name == request.Name).ToList();
+            return departmentModels.Count;    
+        }
+
         public async Task<bool> UpdateDepartment(DepartmentModel department)
         {
             using (var connection = new SqlConnection(_connectionString))
             {
+                //Check unique department
+                var departmentCount = await CheckUniqueDepartment(department);
+                if (departmentCount > 1) { throw new Exception("This department exists."); }
+
                 connection.Open();
                 var command = new SqlCommand("UPDATE Departments SET Code = @Code, Name = @Name, Location = @Location, Description = @Description WHERE Id = @Id", connection);
                 command.Parameters.AddWithValue("@Code", department.Code);
@@ -101,10 +121,14 @@ namespace EmpManagement.BusinessLogic.Services
             }
         }
 
-        public async Task<bool> DeleteDepartment(int departmentId)
+        public async Task<bool> DeleteDepartment(int departmentId, List<EmployeeModel> employees)
         {
             using (var connection = new SqlConnection(_connectionString))
             {
+                //Check department is valid for delete
+                var isValidForDelete = await CheckDepartmentIsValidForDelete(departmentId, employees);
+                if (!isValidForDelete) { throw new Exception("Can't delete this department"); }
+
                 connection.Open();
                 var command = new SqlCommand("DELETE FROM Departments WHERE Id = @Id", connection);
                 command.Parameters.AddWithValue("@Id", departmentId);
@@ -113,6 +137,22 @@ namespace EmpManagement.BusinessLogic.Services
                 var res = Convert.ToInt32(command.ExecuteNonQuery());
 
                 return res > 0;
+            }
+        }
+
+        //Check department is valid for delete
+        private async Task<bool> CheckDepartmentIsValidForDelete(int departmentId, List<EmployeeModel> employees)
+        {
+            var department = await GetDepartmentById(departmentId);
+            var emp = employees.Find(e => e.DepartmentName == department.Name);
+
+            if (emp == null)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
             }
         }
     }

@@ -16,7 +16,7 @@ namespace EmpManagement.BusinessLogic.Interfaces
         Task<DepartmentModel> GetDepartmentById(int departmentId);
         Task<int> AddDepartment(AddDepartmentRequest department);
         Task<bool> UpdateDepartment(DepartmentModel department);
-        Task<bool> DeleteDepartment(int departmentId);
+        Task<bool> DeleteDepartment(int departmentId, List<EmployeeModel> employees);
 
     }
 }

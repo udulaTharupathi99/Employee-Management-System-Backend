@@ -11,10 +11,12 @@ namespace EmpManagement.API.Controllers
     public class DepartmentController : ControllerBase
     {
         private readonly IDepartmentService _departmentService;
+        private readonly IEmployeeService _employeeService;
 
-        public DepartmentController(IDepartmentService departmentService)
+        public DepartmentController(IDepartmentService departmentService, IEmployeeService employeeService)
         {
             _departmentService = departmentService;
+            _employeeService = employeeService;
         }
 
         [HttpGet("/department")]
@@ -60,7 +62,7 @@ namespace EmpManagement.API.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                return BadRequest(ex.Message);
             }
         }
 
@@ -88,7 +90,7 @@ namespace EmpManagement.API.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                return BadRequest(ex.Message);
             }
         }
 
@@ -97,7 +99,9 @@ namespace EmpManagement.API.Controllers
         {
             try
             {
-                var responce = await _departmentService.DeleteDepartment(id);
+                //get all employees
+                var employees = await _employeeService.GetAllEmployees();
+                var responce = await _departmentService.DeleteDepartment(id, employees);
                 if (responce)
                 {
                     return Ok("Department deleted successfully");
@@ -110,7 +114,7 @@ namespace EmpManagement.API.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500, $"Internal server error: {ex.Message}");
+                return BadRequest(ex.Message);
             }
         }
     }

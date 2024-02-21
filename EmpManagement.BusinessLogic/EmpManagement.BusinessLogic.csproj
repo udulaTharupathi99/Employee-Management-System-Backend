@@ -11,6 +11,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="AutoMapper" Version="13.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\EmpManagement.Core\EmpManagement.Core.csproj" />
     <ProjectReference Include="..\EmpManagement.Infrastructure\EmpManagement.Infrastructure.csproj" />
   </ItemGroup>
